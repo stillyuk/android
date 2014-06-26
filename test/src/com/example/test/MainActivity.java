@@ -1,34 +1,23 @@
 package com.example.test;
 
 import service.JService;
-
-import com.example.view.JSurfaceView;
-
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
+
+import com.example.view.JCustomButtonView;
 
 public class MainActivity extends Activity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(new JSurfaceView(this));
+		setContentView(new JCustomButtonView(this));
 		Intent service = new Intent(this, JService.class);
 		startService(service);
-
-		/*
-		 * if (savedInstanceState == null) {
-		 * getFragmentManager().beginTransaction().add(R.id.container, new
-		 * PlaceholderFragment()).commit(); }
-		 */
 	}
 
 	@Override
@@ -47,17 +36,4 @@ public class MainActivity extends Activity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-
-	public static class PlaceholderFragment extends Fragment {
-
-		public PlaceholderFragment() {
-		}
-
-		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-			View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-			return rootView;
-		}
-	}
-
 }
