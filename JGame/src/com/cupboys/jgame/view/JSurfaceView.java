@@ -27,6 +27,7 @@ import com.cupboys.jgame.controller.JImagePositionController;
  */
 public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
 	private static final long REFRESH_INTERVAL = 20;
+	protected static final int UPDATE = 0;
 	private SurfaceHolder holder;
 	private Canvas canvas;
 	private Matrix matrix = new Matrix();
@@ -38,6 +39,23 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 	private Integer spriteX = 100, spriteY = 100;
 	private Boolean pX, pY;
 	private Boolean runFlag;
+
+	Handler mHandler = new MyHandler(getContext());
+
+	static class MyHandler extends Handler {
+		private Context context;
+
+		public MyHandler(Context context) {
+			this.context = context;
+		}
+
+		public void handleMessage(Message msg) {
+			if (msg.what == UPDATE) {
+				Toast.makeText(context, msg.getData().getString("bulletNumber"), Toast.LENGTH_SHORT).show();
+			}
+			super.handleMessage(msg);
+		}
+	};
 
 	public JSurfaceView(Context context) {
 		super(context);
@@ -118,6 +136,40 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 		return super.onTouchEvent(event);
 	}
 
+	@Override
+	public void run() {
+		Looper.prepare();
+		Thread computeBulletNumber = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (true) {
+					Message msg = new Message();
+					msg.what = UPDATE;
+					msg.getData().putString("bulletNumber", Integer.toString(bullets.size()));
+					mHandler.sendMessage(msg);
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+					}
+				}
+			}
+		});
+		computeBulletNumber.setDaemon(true);
+		computeBulletNumber.start();
+		logic();
+	}
+
+	@Override
+	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+	}
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		synchronized (runFlag) {
+			runFlag = false;
+		}
+	}
+
 	private void nextPosition() {
 		if (pX) {
 			spriteX++;
@@ -137,44 +189,4 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 			pY = !pY;
 		}
 	}
-
-	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-	}
-
-	@Override
-	public void surfaceDestroyed(SurfaceHolder holder) {
-		synchronized (runFlag) {
-			runFlag = false;
-		}
-	}
-
-	@Override
-	public void run() {
-		Thread computeBulletNumber = new Thread(new Runnable() {
-			public Handler mHandler;
-
-			@Override
-			public void run() {
-				Looper.prepare();
-				mHandler = new Handler() {
-					public void handleMessage(Message msg) {
-						Toast.makeText(getContext(), Integer.toString(bullets.size()), Toast.LENGTH_SHORT).show();
-						
-					}
-				};
-				while (true) {
-					Looper.loop();
-					try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e) {
-					}
-				}
-			}
-		});
-		computeBulletNumber.setDaemon(true);
-		computeBulletNumber.start();
-		logic();
-	}
-
 }

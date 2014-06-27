@@ -33,10 +33,10 @@ public class JBullet {
 	}
 
 	public boolean isOverBorder() {
-		if (width < 0 || width > JScreenManager.getWidth()) {
+		if (positionX < 0 || positionX > JScreenManager.getWidth()) {
 			return true;
 		}
-		if (height < 0 || height > JScreenManager.getHeight()) {
+		if (positionY < 0 || positionY > JScreenManager.getHeight()) {
 			return true;
 		}
 		return false;
