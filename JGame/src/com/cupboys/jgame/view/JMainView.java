@@ -10,6 +10,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Paint.FontMetrics;
+import android.graphics.Path;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -20,27 +22,49 @@ import android.widget.Toast;
 
 import com.cupboys.jgame.R;
 import com.cupboys.jgame.controller.JImagePositionController;
+import com.cupboys.jgame.listener.JContextViewListener;
+import com.cupboys.jgame.listener.JViewListener;
 
 /**
  * @author jiangyukun
  * @since 2014-06-23 19:50
  */
-public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
+public class JMainView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
+
 	private static final long REFRESH_INTERVAL = 20;
 	protected static final int UPDATE = 0;
+
+	private List<JViewListener> viewListeners;
+
 	private SurfaceHolder holder;
 	private Canvas canvas;
+	private Paint paint;
 	private Matrix matrix = new Matrix();
 	private Bitmap background = BitmapFactory.decodeResource(getResources(), R.drawable.background);
-	private Bitmap sprite = BitmapFactory.decodeResource(getResources(), R.drawable.sprite);
+	private Bitmap spriteImage = BitmapFactory.decodeResource(getResources(), R.drawable.sprite);
 	private JImagePositionController backgroundController;
-	private List<JBullet> bullets = new ArrayList<JBullet>();
+	private List<JBullet> bullets;
+	private List<JPlane> planes;
 
-	private Integer spriteX = 100, spriteY = 100;
+	private String spriteText = "J啦啦啦";
+	private int spriteX = 100, spriteY = 100;
+	private float spriteWidth, spriteHeight;
 	private Boolean pX, pY;
 	private Boolean runFlag;
 
 	Handler mHandler = new MyHandler(getContext());
+
+	public JMainView(Context context) {
+		super(context);
+		for (JViewListener viewListener : viewListeners) {
+			if (viewListener instanceof JContextViewListener) {
+				((JContextViewListener) viewListener).setContext(context);
+			}
+			viewListener.init(context);
+		}
+		holder = super.getHolder();
+		holder.addCallback(this);
+	}
 
 	static class MyHandler extends Handler {
 		private Context context;
@@ -57,22 +81,28 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 		}
 	};
 
-	public JSurfaceView(Context context) {
-		super(context);
-		holder = super.getHolder();
-		holder.addCallback(this);
-	}
-
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
+		for (JViewListener viewListener : viewListeners) {
+			viewListener.start();
+		}
 		this.holder = holder;
-		Thread thread = new Thread(this);
 		runFlag = true;
 		pX = pY = true;
+		paint = new Paint();
+		paint.setColor(Color.GRAY);
+		paint.setAlpha(90);
+		paint.setTextSize(50);
+		spriteWidth = paint.measureText(spriteText);
+		FontMetrics fontMetrics = paint.getFontMetrics();
+		spriteHeight = fontMetrics.descent - fontMetrics.ascent;
 		JScreenManager.setWidth(getWidth());
 		JScreenManager.setHeight(getHeight());
 		backgroundController = new JImagePositionController(background, getWidth(), getHeight());
-		matrix.postTranslate(10, 10);
+		bullets = new ArrayList<JBullet>();
+		planes = new ArrayList<JPlane>();
+		matrix.postTranslate(100, 100);
+		Thread thread = new Thread(this);
 		thread.start();
 	}
 
@@ -102,25 +132,29 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 	private void draw() {
 		try {
 			canvas = holder.lockCanvas();
-			Paint paint = new Paint();
-			paint.setColor(Color.BLUE);
-			paint.setTextSize(50);
-			canvas.drawText("次都是", spriteX, spriteY, paint);
+			Path path = new Path();
+			path.moveTo(spriteX - 50, spriteY - 50);
+			path.lineTo(spriteX - 50, spriteY - 100);
+			/*
+			 * path.lineTo(spriteX - 100, spriteY - 100); path.lineTo(spriteX -
+			 * 100, spriteY - 50);
+			 */
+			path.quadTo(20, 10, 200, 300);
+			path.close();
+			canvas.drawPath(path, paint);
+			canvas.drawText(spriteText, spriteX, spriteY, paint);
+
 			canvas.save();
 			canvas.clipRect(20, 20, 500, 1000);
-			canvas.drawBitmap(sprite, matrix, paint);
+			canvas.drawBitmap(spriteImage, matrix, paint);
 			canvas.restore();
-			canvas.drawText("啦啦啦", spriteX * 2, spriteY * 2, paint);
 			matrix.postRotate(1);
 			for (JBullet bullet : bullets) {
-				canvas.save();
-				canvas.rotate(180, getWidth() / 2, getHeight() / 2);
 				canvas.drawRect(bullet.getRect(), paint);
 				bullet.next(Orientation.VERTICAL);
 				if (bullet.isOverBorder()) {
 					bullets.remove(bullet);
 				}
-				canvas.restore();
 			}
 			nextPosition();
 		} catch (Exception e) {
@@ -131,7 +165,7 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		JBullet bullet = new JBullet(spriteX, spriteY, (int) (Math.random() * 10) + 1);
+		JBullet bullet = new JBullet(spriteX, spriteY, (int) (Math.random() * 5) + 2);
 		bullets.add(bullet);
 		return super.onTouchEvent(event);
 	}
@@ -139,7 +173,7 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 	@Override
 	public void run() {
 		Looper.prepare();
-		Thread computeBulletNumber = new Thread(new Runnable() {
+		Thread computeBulletNumberThread = new Thread(new Runnable() {
 			@Override
 			public void run() {
 				while (true) {
@@ -154,8 +188,8 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 				}
 			}
 		});
-		computeBulletNumber.setDaemon(true);
-		computeBulletNumber.start();
+		computeBulletNumberThread.setDaemon(true);
+		computeBulletNumberThread.start();
 		logic();
 	}
 
@@ -172,20 +206,20 @@ public class JSurfaceView extends SurfaceView implements SurfaceHolder.Callback,
 
 	private void nextPosition() {
 		if (pX) {
-			spriteX++;
+			spriteX += 2;
 		} else {
-			spriteX--;
+			spriteX -= 2;
 		}
-		if (spriteX < 0 || spriteX > getWidth()) {
+		if (spriteX < 0 || spriteX > getWidth() - spriteWidth) {
 			pX = !pX;
 		}
 
 		if (pY) {
-			spriteY++;
+			spriteY += 2;
 		} else {
-			spriteY--;
+			spriteY -= 2;
 		}
-		if (spriteY < 0 || spriteY > getHeight()) {
+		if (spriteY - spriteHeight < 0 || spriteY > getHeight()) {
 			pY = !pY;
 		}
 	}

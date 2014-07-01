@@ -6,7 +6,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.WindowManager;
 
-import com.cupboys.jgame.view.JSurfaceView;
+import com.cupboys.jgame.view.JMainView;
 
 /**
  * @author jiangyukun
@@ -16,7 +16,7 @@ public class JGameActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(new JSurfaceView(this));
+		setContentView(new JMainView(this));
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 	}
 

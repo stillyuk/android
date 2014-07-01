@@ -6,37 +6,32 @@ import android.graphics.Rect;
  * @author jiangyukun
  * @since 2014-06-25 15:05
  */
-public class JBullet {
-	private int width = 10;
-	private int height = 50;
+public class JBullet extends JBaseView {
 	private int speed;
 
-	private int positionX;
-	private int positionY;
-
 	public JBullet(int positionX, int positionY, int speed) {
-		this.positionX = positionX;
-		this.positionY = positionY;
+		setPositionX(positionX);
+		setPositionY(positionY);
 		this.speed = speed;
 	}
 
 	public void next(int orientation) {
 		if (orientation == Orientation.HORIZONTAL) {
-			positionX += speed;
+			setPositionX(getPositionX() - speed);
 		} else if (orientation == Orientation.VERTICAL) {
-			positionY += speed;
+			setPositionY(getPositionY() - speed);
 		}
 	}
 
 	public Rect getRect() {
-		return new Rect(positionX, positionY, positionX + width, positionY + height);
+		return new Rect(getPositionX(), getPositionY(), getPositionX() + getWidth(), getPositionY() + getHeight());
 	}
 
 	public boolean isOverBorder() {
-		if (positionX < 0 || positionX > JScreenManager.getWidth()) {
+		if (getPositionX() < 0 || getPositionX() > JScreenManager.getWidth()) {
 			return true;
 		}
-		if (positionY < 0 || positionY > JScreenManager.getHeight()) {
+		if (getPositionY() < 0 || getPositionY() > JScreenManager.getHeight()) {
 			return true;
 		}
 		return false;
